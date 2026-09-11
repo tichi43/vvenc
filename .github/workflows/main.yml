@@ -36,7 +36,6 @@ jobs:
 
 
       - name: Stage Artifacts for Release
-        if: github.event_name == 'release'
         shell: pwsh
         run: |
           # Locate .exe files and prepend matrix architecture and toolset to avoid collisions
@@ -46,7 +45,6 @@ jobs:
           }
 
       - name: Upload EXE to GitHub Release
-        if: github.event_name == 'release'
         uses: softprops/action-gh-release@v2
         with:
           files: "*-msvc-${{ matrix.toolset }}-${{ matrix.msvc_arch }}.exe"
