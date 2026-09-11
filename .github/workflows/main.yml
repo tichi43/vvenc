@@ -1,0 +1,56 @@
+name: CI build
+
+on:
+  push:
+    branches: [master, release, gh_actions*]
+  pull_request:
+  release:
+    types:
+      - created
+
+permissions:
+  contents: write
+
+jobs:
+  build_msvc:
+    name: "Windows MSVC: ${{ matrix.toolset }} ${{ matrix.msvc_arch }} ${{ matrix.run_unit_test && '+Test' }}"
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+
+          - toolset: v143
+            os: windows-latest
+            msvc_arch: x64
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Static build
+        run: |
+          $ErrorActionPreference = 'stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          cmake -S . -B build/static -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=0 -A "${{ matrix.msvc_arch }}" -T "${{ matrix.toolset }}"
+          cmake --build build/static --config Release
+
+
+      - name: Stage Artifacts for Release
+        if: github.event_name == 'release'
+        shell: pwsh
+        run: |
+          # Locate .exe files and prepend matrix architecture and toolset to avoid collisions
+          Get-ChildItem -Path build/static/Release -Filter *.exe -Recurse | ForEach-Object {
+            $destName = "$($_.BaseName)-msvc-${{ matrix.toolset }}-${{ matrix.msvc_arch }}$($_.Extension)"
+            Copy-Item $_.FullName -Destination $destName
+          }
+
+      - name: Upload EXE to GitHub Release
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: "*-msvc-${{ matrix.toolset }}-${{ matrix.msvc_arch }}.exe"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  
