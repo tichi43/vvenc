@@ -38,6 +38,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: windows-binaries-${{ matrix.toolset }}-${{ matrix.msvc_arch }}
-          path: build/static/Release/*.exe
+          path: D:\a\vvenc\vvenc\bin\release-static\*.exe
 
   
